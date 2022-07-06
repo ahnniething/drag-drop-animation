@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "drag-drop-app",
+    "slug": "drag-drop-app",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  },
+  "name": "drag-drop-app"
+}

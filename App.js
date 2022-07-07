@@ -1,7 +1,9 @@
 import React, { useRef, useState } from "react";
-import { Animated, PanResponder, View } from "react-native";
+import { Animated, Easing, PanResponder, View } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
+import icons from './icons';
+
 
 const BLACK_COLOR = "#1e272e";
 const GREY = "#485460";
@@ -17,6 +19,7 @@ const Edge = styled.View`
   justify-content: center;
   align-items: center;
 `;
+
 const WordContainer = styled(Animated.createAnimatedComponent(View))`
   width: 200px;
   height: 70px;
@@ -27,7 +30,7 @@ const WordContainer = styled(Animated.createAnimatedComponent(View))`
 `;
 
 const Word = styled.Text`
-  font-size: 18px;
+  font-size: 40px;
   font-weight: 500;
   color: ${(props) => props.color};
 `;
@@ -35,6 +38,7 @@ const Center = styled.View`
   flex: 2;
   justify-content: center;
   align-items: center;
+  z-index: 10;
 `;
 const IconCard = styled(Animated.createAnimatedComponent(View))`
   background-color: white;
@@ -44,12 +48,25 @@ const IconCard = styled(Animated.createAnimatedComponent(View))`
   height: 100px;
   justify-content: center;
   align-items: center;
+  z-index: 10;
+  position: absolute;
 `;
 
 export default function App() {
   // Values
+  const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const position = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const scaleEdgeTop = position.y.interpolate({
+    inputRange: [-280, -80],
+    outputRange: [1.5, 1],
+    extrapolate: "clamp",
+  });
+  const scaleEdgeBottom = position.y.interpolate({
+    inputRange: [80, 280],
+    outputRange: [1, 1.5],
+    extrapolate: "clamp",
+  });
   // Animations
   const onPressIn = Animated.spring(scale, {
     toValue: 0.9,
@@ -63,6 +80,18 @@ export default function App() {
     toValue: 0,
     useNativeDriver: true,
   });
+  const onDropScale = Animated.timing(scale, {
+    toValue: 0,
+    useNativeDriver: true,
+    easing: Easing.linear,
+    duration: 100,
+  });
+  const onDropOpacity = Animated.timing(opacity, {
+    toValue: 0,
+    easing: Easing.linear,
+    duration: 100,
+    useNativeDriver: true,
+  }).start();
   // Pan Responders
   const panResponder = useRef(
     PanResponder.create({
@@ -73,18 +102,41 @@ export default function App() {
       onPanResponderGrant: () => {
         onPressIn.start();
       },
-      onPanResponderRelease: () => {
-        Animated.parallel([onPressOut, goHome]).start();
+      onPanResponderRelease: (_, { dy }) => {
+        if (dy < -250 || dy > 250) {
+          Animated.sequence([
+            Animated.parallel([onDropScale, onDropOpacity]),
+            Animated.timing(position, {
+              toValue: 0,
+              duration: 100,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+          ]).start(nextIcon);
+        } else {
+          Animated.parallel([onPressOut, goHome]).start();
+        }
       },
     })
   ).current;
   // State
-
+  const [index, setIndex] = useState(0);
+  const nextIcon = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+    Animated.spring(opacity, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+    setIndex((prev) => prev + 1);
+  }
   return (
     <Container>
       <Edge>
-        <WordContainer>
-          <Word color={BLUE}>Already Know</Word>
+        <WordContainer style={{ transform: [{ scale: scaleEdgeTop }] }}>
+          <Word color={BLUE}>😍</Word>
         </WordContainer>
       </Edge>
       <Center>
@@ -94,14 +146,14 @@ export default function App() {
             transform: [...position.getTranslateTransform(), { scale }],
           }}
         >
-          <Ionicons name="beer" color={GREY} size={70} />
+          <Ionicons name={icons[index]} color={GREY} size={70} />
         </IconCard>
       </Center>
       <Edge>
-        <WordContainer>
-          <Word color={RED}>Don't know</Word>
+        <WordContainer style={{ transform: [{ scale: scaleEdgeBottom }] }}>
+          <Word color={RED}>😫</Word>
         </WordContainer>
       </Edge>
     </Container>
   );
-        }
+}

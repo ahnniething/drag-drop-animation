@@ -91,7 +91,21 @@ export default function App() {
     easing: Easing.linear,
     duration: 100,
     useNativeDriver: true,
-  }).start();
+  })
+  const goCenter = Animated.timing(position, {
+    toValue: 0,
+    duration: 100,
+    easing: Easing.linear,
+    useNativeDriver: true,
+  });
+  const onNextScale = Animated.spring(scale, {
+    toValue: 1,
+    useNativeDriver: true,
+  });
+  const onNextOpacity = Animated.spring(opacity, {
+    toValue: 1,
+    useNativeDriver: true,
+  });
   // Pan Responders
   const panResponder = useRef(
     PanResponder.create({
@@ -106,12 +120,7 @@ export default function App() {
         if (dy < -250 || dy > 250) {
           Animated.sequence([
             Animated.parallel([onDropScale, onDropOpacity]),
-            Animated.timing(position, {
-              toValue: 0,
-              duration: 100,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            }),
+            goCenter
           ]).start(nextIcon);
         } else {
           Animated.parallel([onPressOut, goHome]).start();
@@ -122,15 +131,10 @@ export default function App() {
   // State
   const [index, setIndex] = useState(0);
   const nextIcon = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-    Animated.spring(opacity, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
     setIndex((prev) => prev + 1);
+    Animated.parallel([
+      onNextScale, onNextOpacity
+    ]).start();
   }
   return (
     <Container>
